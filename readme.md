@@ -2,9 +2,9 @@
 
 ## Índices
 
-* $p \in P$: conjunto de produtos
-* $t \in T$: conjunto de períodos (mês/ano)
-* $m \in M$: conjunto de máquinas
+* $p \in P$: produtos
+* $t \in T$: períodos (semana/mês/ano)
+* $m \in M$: máquinas
 * $\tau \in T$: período de origem da demanda
 
 ## Conjuntos
