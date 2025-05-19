@@ -35,7 +35,7 @@
 | $i_{p,t} \geq 0$ | Estoque final do produto $p$ no período $t$ (em kg)                                               |
 | $b_{p,t} \geq 0$ | Quantidade de demanda originalmente de $t$ que não foi atendida dentro do prazo permitido (falta) |
 
-## Função objetivo
+### Função objetivo
 
 Minimizar o total de faltas ponderado pelo custo por produto:
 
