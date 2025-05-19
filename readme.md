@@ -1,13 +1,11 @@
 # Modelo de Otimização: Planejamento Agregado com Estoque e Capacidade Restrita
 
-Este documento apresenta a modelagem matemática para um problema de planejamento agregado da produção com múltiplos produtos, horizonte mensal e restrições de capacidade por máquina. O objetivo é minimizar faltas de atendimento à demanda, considerando a possibilidade de antecipar produção e formar estoque para compensar a insuficiência de capacidade em períodos futuros. O modelo permite atrasos de atendimento da demanda, até um limite máximo de semanas (convertido para períodos mensais) definido por parâmetro.
-
 ## Índices
 
 * $p \in P$: conjunto de produtos
 * $t \in T$: conjunto de períodos (mês/ano)
 * $m \in M$: conjunto de máquinas
-* $\tau \in T$: índice de períodos anteriores a $t$
+* $\tau \in T$: período de origem da demanda
 
 ## Conjuntos
 
@@ -18,57 +16,51 @@ Este documento apresenta a modelagem matemática para um problema de planejament
 
 ## Parâmetros
 
-| Parâmetro          | Descrição                                                                  |
-| ------------------ | -------------------------------------------------------------------------- |
-| $D_{p,t}$          | Demanda prevista do produto $p$ no período $t$ (em kg)                     |
-| $a_{p,m}$          | Taxa de processamento na máquina $m$ para o produto $p$ (em kg/min)        |
-| $\text{Cap}_{m,t}$ | Capacidade produtiva disponível da máquina $m$ no período $t$ (em minutos) |
-| $I_{p,0}$          | Estoque inicial do produto $p$ (em kg)                                     |
-| $C^{\text{sh}}$    | Custo por unidade de falta (atraso acima do limite permitido)              |
-| $\delta$           | Número máximo de semanas que um pedido pode ser atendido com atraso        |
-| $w$                | Número de semanas por período (ex: 4 semanas por mês)                      |
-
-**Nota**: o número de períodos de atraso permitidos é dado por $\Delta = \lfloor \delta / w \rfloor$, ou seja, o maior número inteiro de meses dentro do limite de semanas.
+| Parâmetro           | Descrição                                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| $D_{p,t}$           | Demanda prevista do produto $p$ no período $t$ (em kg)                                                                    |
+| $a_{p,m}$           | Taxa de processamento na máquina $m$ para o produto $p$ (em kg/min)                                                       |
+| $\text{Cap}_{m,t}$  | Capacidade produtiva disponível da máquina $m$ no período $t$ (em minutos)                                                |
+| $I_{p,0}$           | Estoque inicial do produto $p$ (em kg)                                                                                    |
+| $C^{\text{f}}_{p}$ | Custo por unidade de falta do produto $p$ (atraso acima do limite permitido)                                              |
+| $\delta$            | Número máximo de semanas que um pedido pode ser atendido com atraso                                                       |
+| $w$                 | Número de semanas por período (ex: 4 semanas por mês)                                                                     |
+| $\Delta$            | Número máximo de períodos que um pedido pode ser atendido com atraso, definido como $\Delta = \lfloor \delta / w \rfloor$ |
 
 ## Variáveis de decisão
 
-| Variável              | Descrição                                                                                         |
-| --------------------- | ------------------------------------------------------------------------------------------------- |
-| $x_{p,t} \geq 0$      | Quantidade produzida do produto $p$ no período $t$ (em kg)                                        |
-| $i_{p,t} \geq 0$      | Estoque final do produto $p$ no período $t$ (em kg)                                               |
-| $y_{p,t,\tau} \geq 0$ | Quantidade da demanda de $\tau$ atendida no período $t$ (em kg)                                   |
-| $b_{p,t} \geq 0$      | Quantidade de demanda originalmente de $t$ que não foi atendida dentro do prazo permitido (falta) |
+| Variável         | Descrição                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------- |
+| $x_{p,t} \geq 0$ | Quantidade produzida do produto $p$ no período $t$ (em kg)                                        |
+| $i_{p,t} \geq 0$ | Estoque final do produto $p$ no período $t$ (em kg)                                               |
+| $b_{p,t} \geq 0$ | Quantidade de demanda originalmente de $t$ que não foi atendida dentro do prazo permitido (falta) |
 
 ## Função objetivo
 
-Minimizar o total de faltas:
+Minimizar o total de faltas ponderado pelo custo por produto:
 
 $$
-\min \sum_{p \in P} \sum_{t \in T} C^{\text{sh}} \cdot b_{p,t}
+\min \sum_{p \in P} \sum_{t \in T} C^{\text{f}}_{p} \cdot b_{p,t}
 $$
 
 ## Restrições
 
-### 1. Balanço de atendimento da demanda com atraso máximo
+### 1. Atendimento da demanda com atraso máximo
 
-Cada demanda $D_{p,t}$ pode ser atendida em até $\Delta$ períodos futuros:
+Cada demanda $D_{p,t}$ deve ser atendida até $\Delta$ períodos após $t$, ou será considerada falta. O total acumulado de produção e estoque nos períodos $t$ até $t+\Delta$ deve cobrir a demanda do período $t$:
 
 $$
-\sum_{\tau = t}^{t + \Delta} y_{p,\tau,t} + b_{p,t} = D_{p,t}, \quad \forall p \in P,\; t \in T
+\sum_{\tau = t}^{t + \Delta} x_{p,\tau} + i_{p,t-1} \geq D_{p,t} - b_{p,t}, \quad \forall p \in P,\; t \in T
 $$
+
+Assume-se que $i_{p,0} = I_{p,0}$ e que $x_{p,t} = 0$ e $i_{p,t} = 0$ para períodos fora do horizonte.
 
 ### 2. Balanço de estoque
 
-A produção somada ao estoque anterior deve suprir os atendimentos do período:
+A evolução do estoque é dada por:
 
 $$
-i_{p,t-1} + x_{p,t} = \sum_{\tau = t - \Delta}^{t} y_{p,t,\tau} + i_{p,t}, \quad \forall p \in P,\; t \in T
-$$
-
-Com:
-
-$$
-i_{p,0} = I_{p,0}
+i_{p,t} = i_{p,t-1} + x_{p,t} - D_{p,t} + b_{p,t}, \quad \forall p \in P,\; t \in T
 $$
 
 ### 3. Capacidade produtiva por máquina
@@ -77,10 +69,12 @@ $$
 \sum_{p \in P_m} \frac{x_{p,t}}{a_{p,m}} \leq \text{Cap}_{m,t}, \quad \forall m \in M,\; t \in T
 $$
 
-## Considerações adicionais
+## Observações
 
-* O parâmetro $\delta$ (em semanas) é convertido para o número inteiro de períodos mensais permitidos $\Delta$ com base em $w$, o número de semanas por mês.
-* A modelagem permite que parte da demanda de um mês seja atendida em meses seguintes, desde que dentro do limite $\Delta$.
-* Não há custos de estoque nem custos de setup.
-* Todas as produções são obrigatórias (não há lotes mínimos nem decisões binárias de ativação).
+* O parâmetro $\Delta = \lfloor \delta / w \rfloor$ define o número máximo de períodos mensais que um pedido pode ser atrasado, sendo sempre um numero inteiro.
+* A modelagem permite que parte da demanda de um mês seja atendida em periodos seguintes, desde que dentro do limite $\Delta$, constituindo o conceito de "atraso".
+* Custos de estoque não foram adicionados.
+* Custos, ou tempos, de setup não foram adicionados.
+* Todas as produções são obrigatórias, pois trata-se de um planejamento agregado tático (não há lotes mínimos nem decisões binárias de ativação).
 * Cada máquina só pode produzir determinados produtos, conforme $P_m$.
+* O custo de cancelamento varia por produto e está refletido no parâmetro $C^{\text{f}}_{p}$.
