@@ -24,7 +24,7 @@
 | $I_{p,0}$           | Estoque inicial do produto $p$ (em kg)                                                                                    |
 | $C^{\text{f}}_{p}$ | Custo por unidade de falta do produto $p$ (atraso acima do limite permitido)                                              |
 | $\delta$            | Número máximo de semanas que um pedido pode ser atendido com atraso                                                       |
-| $w$                 | Número de semanas por período (ex: 4 semanas por mês)                                                                     |
+| $w$                 | Número de subperíodos por período (ex: 4 semanas por mês)                                                                     |
 | $\Delta$            | Número máximo de períodos que um pedido pode ser atendido com atraso, definido como $\Delta = \lfloor \delta / w \rfloor$ |
 
 ## Variáveis de decisão
